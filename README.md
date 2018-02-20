@@ -5,6 +5,6 @@
 Team: Nikhil Kakodkar & Karim Koreitem
 
 Pycolab was installed using the following command:
-'''
+```
 pip install git+https://github.com/deepmind/pycolab.git
-'''
+```
