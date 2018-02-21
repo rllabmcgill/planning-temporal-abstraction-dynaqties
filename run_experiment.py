@@ -57,17 +57,16 @@ def xy2flat(x,y):
 	return f
 
 # e-greedy algorithm for choosing next action
-def eps_greedy(S, Q, eps, rnd1, rnd2):
+def eps_greedy(S, Q, eps, rnd1, rnd2, rnd4):
 
 	uni_rnd = rnd1.uniform(0.0,1.0)
 	if uni_rnd > eps:
 		# check for highest Q
-		# TODO: break ties with coin flip
-		action = Q[S,:].argmax()
-
+		# Break ties with coin flip
+		action = rnd4.choice(np.flatnonzero(Q[S,:] == Q[S,:].max()))
+		# action = Q[S,:].argmax()
 	else:
-		# choose from our 4 different possible actions randomly:
-		
+		# choose from our 4 different possible actions randomly:		
 		action = rnd2.randint(0,4,1)[0]
 	
 	return action
@@ -108,23 +107,25 @@ def main(argv=()):
 	maze_type = args.world
 
 	# episodes = 0
-	terminal_steps = 10000
-	switch_steps = 5000
+	terminal_steps = 6000
+	switch_steps = 2000
 
 	# Initializations of Q, model, alpha, epsilon, gamma, sim_epoch (ie: n), random_seed
 
 	eps = 0.1
 	alpha = 0.1
 	gamma = 0.95
-	sim_epoch = 5
+	sim_epoch = 50
 
 	state_len = nrow*ncol
 	action_len = 4
 	reward_len = 2
 
+	# rnd1 = np.random.RandomState(24)
 	rnd1 = np.random.RandomState(24)
 	rnd2 = np.random.RandomState(42)
 	rnd3 = np.random.RandomState(57)
+	rnd4 = np.random.RandomState(13)	
 
 	model = dict()
 	Q = np.zeros((state_len, action_len))
@@ -173,7 +174,7 @@ def main(argv=()):
 		S = S_prime	
 
 		# Select Action A using epsilon-greedy (given S, Q)
-		A = eps_greedy(S, Q, eps, rnd1, rnd2)
+		A = eps_greedy(S, Q, eps, rnd1, rnd2, rnd4)
 		# print("Action is: " + str(A))
 
 		# Apply action A to current maze, get reward R, and new state S'
