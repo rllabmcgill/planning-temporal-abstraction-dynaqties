@@ -4,8 +4,10 @@ import curses
 import sys, os
 import argparse
 import numpy as np
-import matplotlib.pyplot as plt
+from math import sqrt
 import myhuman_ui as human_ui
+import matplotlib.pyplot as plt
+
 
 BLOCKING_MAZE_INIT =['###########',
 					 '#        G#',
@@ -101,13 +103,8 @@ def setup_maze(maze_type, start_row, start_col):
 	return maze_init, maze_update
 
 
-def main(argv=()):
-	parser = argparse.ArgumentParser()
-	parser.add_argument('config_file', type=str,  help="Configuration file path. e.g. blocking.config")
-	args = parser.parse_args()
+def run_experiment(config_file_path):
 
-	#Reading config file
-	config_file_path = args.config_file
 	if not os.path.exists(config_file_path): raise argparse.ArgumentTypeError('Not a valid config file')
 
 	with open(config_file_path, 'r') as config_fd:
@@ -118,6 +115,7 @@ def main(argv=()):
 	switch_steps = config['switch_maze_at_step']
 
 	maze_type = config['maze_type']
+	arch = config['arch']
 	nrow = config['maze_params']['row']
 	ncol = config['maze_params']['col']
 	start_row = config['maze_params']['start_row']
@@ -126,7 +124,9 @@ def main(argv=()):
 	eps = config['policy_params']['epsilon']
 	alpha = config['learning_alg_params']['alpha']
 	gamma = config['learning_alg_params']['gamma']
+	kappa = config['planner_params']['kappa']
 	sim_epoch = config['model_params']['sim_epoch']
+
 
 	state_len = nrow*ncol
 	action_len = 4
@@ -139,7 +139,17 @@ def main(argv=()):
 	rnd4 = np.random.RandomState(13)
 	rnd5 = np.random.RandomState(66)
 
-	model = dict()
+	# Check for algo
+	if arch == 'dyna_q':
+		model = dict()
+	elif arch == 'dyna_q_plus':
+		visited_step = dict()
+		model = dict()
+		for s in range(0,state_len):
+			for a in range(0, 4):
+				model[(s,a)] = (s,0)
+				visited_step[(s,a)] = 0
+
 	Q = np.zeros((state_len, action_len))
 
 	# Starting position of our agent
@@ -198,6 +208,9 @@ def main(argv=()):
 		A = eps_greedy(S, Q, eps, rnd1, rnd2, rnd4)
 		# print("Action is: " + str(A))
 
+
+
+
 		# Apply action A to current maze, get reward R, and new state S'
 		obs, R, _ = curr_maze.play(A)
 		S_prime = parse_obs(obs)
@@ -210,6 +223,10 @@ def main(argv=()):
 		# Update Model with R, S_prime for a particular state action pair
 		model[(S,A)] = (R, S_prime)
 
+		# Dyna-Q+ only
+		if arch == 'dyna_q_plus':
+			visited_step[(S,A)] = steps
+
 		# Loop sim_epoch times (simulation):
 		for i in range(sim_epoch):
 			# Get random previously observed state S
@@ -219,9 +236,12 @@ def main(argv=()):
 			# Extract reward R and next state S' for that action A from Model
 			sim_R, sim_S_prime = model[(rnd_S, rnd_A)]
 
+			if arch == 'dyna_q_plus':
+				tau = steps - visited_step[(rnd_S, rnd_A)] 
+				sim_R += kappa*sqrt(tau)			
+
 			# Update Q function
 			Q[rnd_S, rnd_A] = Q[rnd_S,rnd_A] + alpha*( sim_R + gamma*Q[sim_S_prime,:].max() - Q[rnd_S, rnd_A] )
-
 
 		# print("Current step: " + str(steps))
 		cum_reward += R
@@ -235,15 +255,16 @@ def main(argv=()):
 	plt.xlabel('Number of steps')
 	plt.show()
 
-	# Make a CursesUi to play it with.
-	# ui = human_ui.CursesUi(
-	# 	 keys_to_actions={curses.KEY_UP: 0, curses.KEY_DOWN: 1,
-	# 					   curses.KEY_LEFT: 2, curses.KEY_RIGHT: 3,
-	# 					   -1: 4},
-	# 	 delay=200)
+def main(argv):
 
-	# ui.play(maze_init, maze_update)
+	parser = argparse.ArgumentParser()
+	parser.add_argument('config_file', type=str,  help="Configuration file path. e.g. blocking.config")
+	args = parser.parse_args()
 
+	#Reading config file
+	config_file_path = args.config_file
+
+	run_experiment(config_file_path)
 
 if __name__ == '__main__':
 	main(sys.argv)

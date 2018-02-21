@@ -1,6 +1,7 @@
 import json
 
-config = {'terminal_steps' : 6000,
+config = {'arch' : 'dyna_q',
+          'terminal_steps' : 6000,
           'switch_maze_at_step' : 2000,
           'maze_type' : 'blocking',
           'maze_params' : {
@@ -12,17 +13,20 @@ config = {'terminal_steps' : 6000,
           'policy' : 'epsilon_greedy',
           'policy_params' : {
               'epsilon' : 0.1,
-              'seed' : 10
+              'seed' : 24
           },
           'learning_alg' : 'q_learning',
           'learning_alg_params' : {
               'alpha' : 0.1,
               'gamma' : 0.95,
-              'seed' : 10
+              'seed' : 42
           },
           'model' : 'deterministic_no_prior',
           'model_params' : {
-              'sim_epoch' : 5
+              'sim_epoch' : 50
+          },
+          'planner_params' : {
+              'kappa' : 0.01
           }
          }
 
