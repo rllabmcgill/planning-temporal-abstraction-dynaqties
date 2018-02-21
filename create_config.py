@@ -1,6 +1,6 @@
 import json
 
-config = {'arch' : 'dyna_q',
+config = {'arch' : 'dyna_q_plus',
           'terminal_steps' : 6000,
           'switch_maze_at_step' : 2000,
           'maze_type' : 'blocking',

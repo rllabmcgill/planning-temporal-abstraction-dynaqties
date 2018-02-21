@@ -103,12 +103,7 @@ def setup_maze(maze_type, start_row, start_col):
 	return maze_init, maze_update
 
 
-def run_experiment(config_file_path):
-
-	if not os.path.exists(config_file_path): raise argparse.ArgumentTypeError('Not a valid config file')
-
-	with open(config_file_path, 'r') as config_fd:
-		config = json.load(config_fd)
+def run_experiment(config):
 
 	# Initializations
 	terminal_steps = config['terminal_steps']
@@ -147,7 +142,7 @@ def run_experiment(config_file_path):
 		model = dict()
 		for s in range(0,state_len):
 			for a in range(0, 4):
-				model[(s,a)] = (s,0)
+				model[(s,a)] = (0,s)
 				visited_step[(s,a)] = 0
 
 	Q = np.zeros((state_len, action_len))
@@ -173,9 +168,9 @@ def run_experiment(config_file_path):
 			S = xy2flat(start_row, start_col)
 			S_prime = S
 			maze_init, maze_update = setup_maze(maze_type, start_row, start_col)
-			print("New episode starting...")
-			print("Current step: " + str(steps))
-			print("Agent's position: " + str(maze_init._sprites_and_drapes['P']._virtual_row) + ", " + str(maze_init._sprites_and_drapes['P']._virtual_col))
+			# print("New episode starting...")
+			# print("Current step: " + str(steps))
+			# print("Agent's position: " + str(maze_init._sprites_and_drapes['P']._virtual_row) + ", " + str(maze_init._sprites_and_drapes['P']._virtual_col))
 			curr_maze = maze_init # only doing this to reset the agent to the starting position, the next if statement will actually correct the map if need be
 
 			episodes += 1
@@ -209,8 +204,6 @@ def run_experiment(config_file_path):
 		# print("Action is: " + str(A))
 
 
-
-
 		# Apply action A to current maze, get reward R, and new state S'
 		obs, R, _ = curr_maze.play(A)
 		S_prime = parse_obs(obs)
@@ -220,10 +213,10 @@ def run_experiment(config_file_path):
 
 		# print("Reward R is: " + str(R))
 
+
 		# Update Model with R, S_prime for a particular state action pair
 		model[(S,A)] = (R, S_prime)
-
-		# Dyna-Q+ only
+		
 		if arch == 'dyna_q_plus':
 			visited_step[(S,A)] = steps
 
@@ -248,12 +241,8 @@ def run_experiment(config_file_path):
 		cum_reward_lst.append(cum_reward)
 		steps += 1
 
-	print("Number of episodes completed: " + str(episodes))
-	print("Cumulative reward: " + str(cum_reward))
-	plt.plot(range(0,steps), cum_reward_lst)
-	plt.ylabel('Cumulative Rewards')
-	plt.xlabel('Number of steps')
-	plt.show()
+	return cum_reward_lst, steps
+
 
 def main(argv):
 
@@ -264,7 +253,18 @@ def main(argv):
 	#Reading config file
 	config_file_path = args.config_file
 
-	run_experiment(config_file_path)
+	if not os.path.exists(config_file_path): raise argparse.ArgumentTypeError('Not a valid config file')
+
+	with open(config_file_path, 'r') as config_fd:
+		config = json.load(config_fd)
+
+	cum_reward_lst, steps = run_experiment(config)
+
+	print("Cumulative reward: " + str(cum_reward_lst[-1]))
+	plt.plot(range(0,steps), cum_reward_lst)
+	plt.ylabel('Cumulative Rewards')
+	plt.xlabel('Number of steps')
+	plt.show()
 
 if __name__ == '__main__':
 	main(sys.argv)

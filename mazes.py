@@ -52,7 +52,7 @@ class PlayerSprite(prefab_sprites.MazeWalker):
 		if self.position == (1, 9):
 			the_plot.add_reward(1.0)
 			the_plot.terminate_episode()
-			print("Terminating episode..")
+			# print("Terminating episode..")
 			# time.sleep(10)
 
 		else:
