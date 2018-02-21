@@ -16,7 +16,7 @@ def make_maze(maze):
 	"""Builds and returns a blocking maze gridworld game."""
 	return ascii_art.ascii_art_to_game(
 		maze, what_lies_beneath=' ',
-		sprites={'S': PlayerSprite})
+		sprites={'P': PlayerSprite})
 
 # Epsilon-greedy implementation for choosing next action
 # def choose_next_action(state, ):
@@ -52,5 +52,8 @@ class PlayerSprite(prefab_sprites.MazeWalker):
 		if self.position == (1, 9):
 			the_plot.add_reward(1.0)
 			the_plot.terminate_episode()
+
+		else:
+			the_plot.add_reward(0.0)
 
 

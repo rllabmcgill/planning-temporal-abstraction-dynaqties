@@ -257,12 +257,15 @@ class CursesUi(object):
         action = self._keycodes_to_actions[keycode]
         if n >= 10 and not game_updated:
           game_updated = True
-          
-          old_position = self._game._sprites_and_drapes['S']._position
-          self._game2._sprites_and_drapes['S']._position = old_position
 
-          old_row, old_col = self._game._sprites_and_drapes['S']._virtual_row, self._game._sprites_and_drapes['S']._virtual_col
-          self._game2._sprites_and_drapes['S']._virtual_row, self._game2._sprites_and_drapes['S']._virtual_col = old_row, old_col
+          old_row, old_col = self._game._sprites_and_drapes['P']._virtual_row, self._game._sprites_and_drapes['P']._virtual_col
+          self._game2._sprites_and_drapes['P']._teleport((old_row, old_col))
+
+          # old_position = self._game._sprites_and_drapes['S']._position
+          # self._game2._sprites_and_drapes['S']._position = old_position
+
+          # old_row, old_col = self._game._sprites_and_drapes['S']._virtual_row, self._game._sprites_and_drapes['S']._virtual_col
+          # self._game2._sprites_and_drapes['S']._virtual_row, self._game2._sprites_and_drapes['S']._virtual_col = old_row, old_col
           
           self._game = self._game2
 
