@@ -121,11 +121,12 @@ def main(argv=()):
 	action_len = 4
 	reward_len = 2
 
-	# rnd1 = np.random.RandomState(24)
+	# Don't need all these guys
 	rnd1 = np.random.RandomState(24)
 	rnd2 = np.random.RandomState(42)
 	rnd3 = np.random.RandomState(57)
-	rnd4 = np.random.RandomState(13)	
+	rnd4 = np.random.RandomState(13)
+	rnd5 = np.random.RandomState(66)
 
 	model = dict()
 	Q = np.zeros((state_len, action_len))
@@ -164,10 +165,21 @@ def main(argv=()):
 		if steps <= switch_steps:
 			curr_maze = maze_init
 		else:
-			# TODO: weird model update wall situation (agent is in a new wall position)
 			old_row, old_col = curr_maze._sprites_and_drapes['P']._virtual_row, \
 							   curr_maze._sprites_and_drapes['P']._virtual_col
-			maze_update._sprites_and_drapes['P']._teleport((old_row, old_col))
+			
+			# If agent happens to be where a new wall is added by the environment changing
+			# Move the agent to an open location randomly (either up one row or down one row)
+			if old_row == 4 and old_col == 9:
+				if rnd5.randint(0,2) == 1:
+					old_row += 1
+					S_prime += 9
+				else:
+					old_row -= 1
+					S_prime -= 9
+				maze_update._sprites_and_drapes['P']._teleport((old_row, old_col))
+			else:
+				maze_update._sprites_and_drapes['P']._teleport((old_row, old_col))
 			curr_maze = maze_update
 
 		# Get current state S
