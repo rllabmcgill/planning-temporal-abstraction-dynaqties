@@ -1,6 +1,7 @@
-import sys
+import json
 import mazes
 import curses
+import sys, os
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,7 +14,7 @@ BLOCKING_MAZE_INIT =['###########',
 					 '######### #',
 					 '#         #',
 					 '#   P     #',
-					 '###########']	
+					 '###########']
 
 BLOCKING_MAZE_UPDATE =  ['###########',
 						 '#        G#',
@@ -22,7 +23,7 @@ BLOCKING_MAZE_UPDATE =  ['###########',
 						 '# #########',
 						 '#         #',
 						 '#   P     #',
-						 '###########']	
+						 '###########']
 
 SHORTCUT_MAZE_INIT   =  ['###########',
 						 '#        G#',
@@ -31,7 +32,7 @@ SHORTCUT_MAZE_INIT   =  ['###########',
 						 '# #########',
 						 '#         #',
 						 '#   P     #',
-						 '###########']	
+						 '###########']
 
 SHORTCUT_MAZE_UPDATE =['###########',
 					   '#        G#',
@@ -40,7 +41,7 @@ SHORTCUT_MAZE_UPDATE =['###########',
 					   '# ####### #',
 					   '#         #',
 					   '#   P     #',
-					   '###########']	
+					   '###########']
 
 nrow = 6
 ncol = 9
@@ -66,9 +67,9 @@ def eps_greedy(S, Q, eps, rnd1, rnd2, rnd4):
 		action = rnd4.choice(np.flatnonzero(Q[S,:] == Q[S,:].max()))
 		# action = Q[S,:].argmax()
 	else:
-		# choose from our 4 different possible actions randomly:		
+		# choose from our 4 different possible actions randomly:
 		action = rnd2.randint(0,4,1)[0]
-	
+
 	return action
 
 def parse_obs(obs):
@@ -92,30 +93,40 @@ def setup_maze(maze_type, start_row, start_col):
 	# Place engines in play mode
 	maze_init.its_showtime()
 	maze_update.its_showtime()
-	
+
 	# Move agent to starting position
 	maze_init._sprites_and_drapes['P']._teleport((start_row, start_col))
 	maze_update._sprites_and_drapes['P']._teleport((start_row, start_col))
 
 	return maze_init, maze_update
 
+
 def main(argv=()):
-
 	parser = argparse.ArgumentParser()
-	parser.add_argument('world', type=str, help="Type of gridworld.", choices=["blocking", "shortcut"])
+	parser.add_argument('config_file', type=str,  help="Configuration file path. e.g. blocking.config")
 	args = parser.parse_args()
-	maze_type = args.world
 
-	# episodes = 0
-	terminal_steps = 6000
-	switch_steps = 2000
+	#Reading config file
+	config_file_path = args.config_file
+	if not os.path.exists(config_file_path): raise argparse.ArgumentTypeError('Not a valid config file')
 
-	# Initializations of Q, model, alpha, epsilon, gamma, sim_epoch (ie: n), random_seed
+	with open(config_file_path, 'r') as config_fd:
+		config = json.load(config_fd)
 
-	eps = 0.1
-	alpha = 0.1
-	gamma = 0.95
-	sim_epoch = 50
+	# Initializations
+	terminal_steps = config['terminal_steps']
+	switch_steps = config['switch_maze_at_step']
+
+	maze_type = config['maze_type']
+	nrow = config['maze_params']['row']
+	ncol = config['maze_params']['col']
+	start_row = config['maze_params']['start_row']
+	start_col = config['maze_params']['start_col']
+
+	eps = config['policy_params']['epsilon']
+	alpha = config['learning_alg_params']['alpha']
+	gamma = config['learning_alg_params']['gamma']
+	sim_epoch = config['model_params']['sim_epoch']
 
 	state_len = nrow*ncol
 	action_len = 4
@@ -125,14 +136,12 @@ def main(argv=()):
 	rnd1 = np.random.RandomState(24)
 	rnd2 = np.random.RandomState(42)
 	rnd3 = np.random.RandomState(57)
-	rnd4 = np.random.RandomState(13)	
+	rnd4 = np.random.RandomState(13)
 
 	model = dict()
 	Q = np.zeros((state_len, action_len))
 
 	# Starting position of our agent
-	start_row = 6
-	start_col = 4
 
 	steps = 0
 	episodes = 0
@@ -141,7 +150,7 @@ def main(argv=()):
 
 	S = xy2flat(start_row, start_col)
 	S_prime = S
-	
+
 	# Initialize maze
 	maze_init, maze_update = setup_maze(maze_type, start_row, start_col)
 	curr_maze = maze_init
@@ -151,7 +160,7 @@ def main(argv=()):
 		# Reset episode:
 		if curr_maze._game_over:
 			S = xy2flat(start_row, start_col)
-			S_prime = S			
+			S_prime = S
 			maze_init, maze_update = setup_maze(maze_type, start_row, start_col)
 			print("New episode starting...")
 			print("Current step: " + str(steps))
@@ -171,7 +180,7 @@ def main(argv=()):
 			curr_maze = maze_update
 
 		# Get current state S
-		S = S_prime	
+		S = S_prime
 
 		# Select Action A using epsilon-greedy (given S, Q)
 		A = eps_greedy(S, Q, eps, rnd1, rnd2, rnd4)
@@ -194,7 +203,7 @@ def main(argv=()):
 			# Get random previously observed state S
 			# Get random previously taken action A for that state S
 			rnd_S, rnd_A = model.keys()[ rnd3.randint(0, len(model), 1)[0] ]
-		
+
 			# Extract reward R and next state S' for that action A from Model
 			sim_R, sim_S_prime = model[(rnd_S, rnd_A)]
 
