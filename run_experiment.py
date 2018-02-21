@@ -3,6 +3,7 @@ import mazes
 import curses
 import argparse
 import numpy as np
+import matplotlib.pyplot as plt
 import myhuman_ui as human_ui
 
 BLOCKING_MAZE_INIT =['###########',
@@ -78,13 +79,8 @@ def parse_obs(obs):
 
 	return state_mtx.argmax()
 
-def main(argv=()):
 
-	parser = argparse.ArgumentParser()
-	parser.add_argument('world', type=str, help="Type of gridworld.", choices=["blocking", "shortcut"])
-	args = parser.parse_args()
-	maze_type = args.world
-
+def setup_maze(maze_type, start_row, start_col):
 	if maze_type == "shortcut":
 		maze_init = mazes.make_maze(SHORTCUT_MAZE_INIT)
 		maze_update = mazes.make_maze(SHORTCUT_MAZE_UPDATE)
@@ -94,9 +90,26 @@ def main(argv=()):
 		maze_update = mazes.make_maze(BLOCKING_MAZE_UPDATE)
 
 
+	# Place engines in play mode
+	maze_init.its_showtime()
+	maze_update.its_showtime()
+	
+	# Move agent to starting position
+	maze_init._sprites_and_drapes['P']._teleport((start_row, start_col))
+	maze_update._sprites_and_drapes['P']._teleport((start_row, start_col))
+
+	return maze_init, maze_update
+
+def main(argv=()):
+
+	parser = argparse.ArgumentParser()
+	parser.add_argument('world', type=str, help="Type of gridworld.", choices=["blocking", "shortcut"])
+	args = parser.parse_args()
+	maze_type = args.world
+
 	# episodes = 0
-	terminal_steps = 1000
-	switch_steps = 50
+	terminal_steps = 10000
+	switch_steps = 5000
 
 	# Initializations of Q, model, alpha, epsilon, gamma, sim_epoch (ie: n), random_seed
 
@@ -108,33 +121,49 @@ def main(argv=()):
 	state_len = nrow*ncol
 	action_len = 4
 	reward_len = 2
-	start_row = 6
-	start_col = 4
 
 	rnd1 = np.random.RandomState(24)
 	rnd2 = np.random.RandomState(42)
+	rnd3 = np.random.RandomState(57)
 
 	model = dict()
 	Q = np.zeros((state_len, action_len))
 
-
-	maze_init._sprites_and_drapes['P']._teleport((start_row, start_col))
-	S = xy2flat(start_row, start_col)
-	S_prime = S
+	# Starting position of our agent
+	start_row = 6
+	start_col = 4
 
 	steps = 0
+	episodes = 0
+	cum_reward = 0
+	cum_reward_lst = []
 
-	# Place engines in play mode
-	maze_init.its_showtime()
-	maze_update.its_showtime()
+	S = xy2flat(start_row, start_col)
+	S_prime = S
+	
+	# Initialize maze
+	maze_init, maze_update = setup_maze(maze_type, start_row, start_col)
+	curr_maze = maze_init
 
 	while steps <= terminal_steps:
 
-		if steps <= 50:
+		# Reset episode:
+		if curr_maze._game_over:
+			S = xy2flat(start_row, start_col)
+			S_prime = S			
+			maze_init, maze_update = setup_maze(maze_type, start_row, start_col)
+			print("New episode starting...")
+			print("Current step: " + str(steps))
+			print("Agent's position: " + str(maze_init._sprites_and_drapes['P']._virtual_row) + ", " + str(maze_init._sprites_and_drapes['P']._virtual_col))
+			curr_maze = maze_init # only doing this to reset the agent to the starting position, the next if statement will actually correct the map if need be
+
+			episodes += 1
+
+		# The maze evolves after switch_steps:
+		if steps <= switch_steps:
 			curr_maze = maze_init
 		else:
-			# TODO: weird model update wall situation
-
+			# TODO: weird model update wall situation (agent is in a new wall position)
 			old_row, old_col = curr_maze._sprites_and_drapes['P']._virtual_row, \
 							   curr_maze._sprites_and_drapes['P']._virtual_col
 			maze_update._sprites_and_drapes['P']._teleport((old_row, old_col))
@@ -145,7 +174,7 @@ def main(argv=()):
 
 		# Select Action A using epsilon-greedy (given S, Q)
 		A = eps_greedy(S, Q, eps, rnd1, rnd2)
-		print("Action is: " + str(A))
+		# print("Action is: " + str(A))
 
 		# Apply action A to current maze, get reward R, and new state S'
 		obs, R, _ = curr_maze.play(A)
@@ -154,21 +183,35 @@ def main(argv=()):
 		# Update Q function
 		Q[S,A] = Q[S,A] + alpha*( R + gamma*Q[S_prime,:].max() - Q[S,A] )
 
-		# Update Model
+		# print("Reward R is: " + str(R))
 
+		# Update Model with R, S_prime for a particular state action pair
+		model[(S,A)] = (R, S_prime)
 
 		# Loop sim_epoch times (simulation):
-
+		for i in range(sim_epoch):
 			# Get random previously observed state S
-
 			# Get random previously taken action A for that state S
-
+			rnd_S, rnd_A = model.keys()[ rnd3.randint(0, len(model), 1)[0] ]
+		
 			# Extract reward R and next state S' for that action A from Model
+			sim_R, sim_S_prime = model[(rnd_S, rnd_A)]
 
 			# Update Q function
+			Q[rnd_S, rnd_A] = Q[rnd_S,rnd_A] + alpha*( sim_R + gamma*Q[sim_S_prime,:].max() - Q[rnd_S, rnd_A] )
 
+
+		# print("Current step: " + str(steps))
+		cum_reward += R
+		cum_reward_lst.append(cum_reward)
 		steps += 1
 
+	print("Number of episodes completed: " + str(episodes))
+	print("Cumulative reward: " + str(cum_reward))
+	plt.plot(range(0,steps), cum_reward_lst)
+	plt.ylabel('Cumulative Rewards')
+	plt.xlabel('Number of steps')
+	plt.show()
 
 	# Make a CursesUi to play it with.
 	# ui = human_ui.CursesUi(
