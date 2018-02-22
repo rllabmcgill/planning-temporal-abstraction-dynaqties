@@ -1,4 +1,8 @@
 # Python:
 *.pyc
+
 # Jupyter Notebook:
 .ipynb_*/*
+
+# Python style guide package
+.ropeproject/*

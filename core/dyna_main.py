@@ -5,7 +5,6 @@ import sys, os
 import argparse
 import numpy as np
 from math import sqrt
-import myhuman_ui as human_ui
 import matplotlib.pyplot as plt
 
 
@@ -181,7 +180,7 @@ def run_experiment(config):
 		else:
 			old_row, old_col = curr_maze._sprites_and_drapes['P']._virtual_row, \
 							   curr_maze._sprites_and_drapes['P']._virtual_col
-			
+
 			# If agent happens to be where a new wall is added by the environment changing
 			# Move the agent to an open location randomly (either up one row or down one row)
 			if old_row == 4 and old_col == 9:
@@ -216,7 +215,7 @@ def run_experiment(config):
 
 		# Update Model with R, S_prime for a particular state action pair
 		model[(S,A)] = (R, S_prime)
-		
+
 		if arch == 'dyna_q_plus':
 			visited_step[(S,A)] = steps
 
@@ -230,8 +229,8 @@ def run_experiment(config):
 			sim_R, sim_S_prime = model[(rnd_S, rnd_A)]
 
 			if arch == 'dyna_q_plus':
-				tau = steps - visited_step[(rnd_S, rnd_A)] 
-				sim_R += kappa*sqrt(tau)			
+				tau = steps - visited_step[(rnd_S, rnd_A)]
+				sim_R += kappa*sqrt(tau)
 
 			# Update Q function
 			Q[rnd_S, rnd_A] = Q[rnd_S,rnd_A] + alpha*( sim_R + gamma*Q[sim_S_prime,:].max() - Q[rnd_S, rnd_A] )
