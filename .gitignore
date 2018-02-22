@@ -1,2 +1,4 @@
 # Python:
 *.pyc
+# Jupyter Notebook:
+.ipynb_*/*
