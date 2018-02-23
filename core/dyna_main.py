@@ -233,22 +233,15 @@ def run_experiment(config):
 			'R' : R,
 			'S_prime' : S_prime
 		}
-
 		result[step] = {
 			'config' : config,
 			'episode' : episode,
 			'experience' : experience,
-			'value_function' : Q,
+			'value_function' : Q.copy(),
 			'observation' : obs
 		}
-		step += 1
 
-	# return the following:
-	# config
-	# for every step
-		# episode Number
-		# value function
-		# experience = (s,a,s_prime,r)
+		step += 1
 
 	return result
 

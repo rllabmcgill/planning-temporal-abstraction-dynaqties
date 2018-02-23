@@ -1,5 +1,6 @@
 # import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 from matplotlib import animation
 from matplotlib.image import PcolorImage
 
@@ -24,8 +25,8 @@ class GameAnimator:
         self._interval = 200
         self._total_frames = 1000
 
-        # self._initialized = False
-        # self.reset()
+        self._initialized = False
+        self.reset()
 
     def getTimeline(self, result, episode, start_step, stop_step):
         if episode is None:
@@ -46,17 +47,20 @@ class GameAnimator:
                         return start_step, stop_step
 
     def reset(self):
-        self._axes_image = PcolorImage()
-        self._axes.add_image(self._axes_image)
         self._initialized = True
 
     def renderFrame(self, step):
-        # if not self._initialized:
-        #     self.reset()
-        frame = np.empty((6, 9))
-        frame = self.drawValueFunction(self._result[step])
-        # frame = self.drawGameEnv(frame, step_result)
-        return (self._axes.pcolor(frame),)
+        if not self._initialized:
+            self.reset()
+        self._axes.set_title('Step = '+str(step))
+        q_value = self.drawValueFunction(self._result[step])
+        # game_env = self.drawGameEnv(frame, step_result)
+        img = plt.imshow(q_value, origin='upper')
+        return (img, )
+        # return (self._axes.pcolor(q_value),)
+                # self._axes.pcolor(game_wall))
+                # self._axes.pcolor(player))
+                # self._axes.pcolor(goal))
 
     def drawValueFunction(self, step_result):
         return step_result['value_function'].max(1).reshape(6, 9)
@@ -65,7 +69,7 @@ class GameAnimator:
         start_step, stop_step = self.getTimeline(self._result, episode,
                                                  start_step, stop_step)
 
-        frame_step = float(stop_step - start_step) / self._total_frames
+        frame_step = float(stop_step - start_step + 1) / (self._total_frames)
         frame_list = range(start_step, stop_step, int(frame_step))
         frame_iter = iter(frame_list)
 
