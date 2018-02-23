@@ -48,21 +48,51 @@ class GameAnimator:
         self._initialized = True
 
     def renderFrame(self, step):
+        
         if not self._initialized:
-            self.reset()
-        self._axes.set_title('Algorithm = ' + self._result[0]['config']['arch']\
-                                            + ' | Step = '+str(step) \
-                                            + ' | Maze = '+self._result[0]['config']['maze_type'])
+            self.reset()        
+
+        
+        self._figure.suptitle('Algorithm: ' + self._result[0]['config']['arch']\
+                                            + ' | Step: '+str(step) \
+                                            + ' | Maze: '+self._result[0]['config']['maze_type'])
+        
+        # Plot Q function on axes[1]
         q_value = self.drawValueFunction(self._result[step])
         # game_env = self.drawGameEnv(frame, step_result)
         # img = plt.imshow(q_value, origin='upper')
         # return(img,)
         # return (self._axes.pcolor(img), )
-        return (self._axes.pcolor(q_value, cmap = 'RdBu_r'),)
+        self._axes[1].pcolor(q_value, cmap = 'RdBu_r')
+        self._axes[1].set_title("Value function")
+        
+        # Plot Cumulative Reward on axes[0]
+        cum_reward_lst = self.getCumRewardLst(step)
+        total_cum_reward = self.getCumRewardLst(len(self._result))[-1]
+        
+        self._axes[0].set_ylabel('Cumulative Rewards')
+        self._axes[0].set_xlabel('Number of steps')    
+        self._axes[0].set_xlim([0, len(self._result)])
+        self._axes[0].set_ylim([0, total_cum_reward + 50])
+        self._axes[0].plot(cum_reward_lst)
+        self._axes[0].set_title("Cumulative Reward")
+        self._axes[0].axvline(x=self._result[0]['config']['switch_maze_at_step'], color='grey', linestyle='--')
+
+
+        return (self._axes,)
                 # self._axes.pcolor(game_wall))
                 # self._axes.pcolor(player))
                 # self._axes.pcolor(goal))
 
+    def getCumRewardLst(self, step):
+
+		cum_reward = 0
+		cum_reward_lst = []
+		for s in range(step):
+		    cum_reward += self._result[s]['experience']['R']
+		    cum_reward_lst.append(cum_reward)
+		return cum_reward_lst
+		
     def drawValueFunction(self, step_result):
     	# flip matrix in rows only: (for plotting)
     	# value_func = step_result['value_function']

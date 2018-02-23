@@ -160,6 +160,9 @@ def run_experiment(config):
 	episode = 0
 	result = OrderedDict()
 
+	cum_reward = 0
+	cum_reward_lst = []
+
 	while step < terminal_step:
 
 		# Reset episode:
@@ -227,6 +230,10 @@ def run_experiment(config):
 			# Update Q function
 			Q[rnd_S, rnd_A] = Q[rnd_S,rnd_A] + alpha*( sim_R + gamma*Q[sim_S_prime,:].max() - Q[rnd_S, rnd_A] )
 
+		
+		cum_reward += R
+		cum_reward_lst.append(cum_reward)
+		
 		experience = {
 			'S' : S,
 			'A' : A,
