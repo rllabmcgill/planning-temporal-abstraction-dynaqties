@@ -4,8 +4,6 @@ import matplotlib.pyplot as plt
 from matplotlib import animation
 from matplotlib.image import PcolorImage
 
-# def get_q_snapshot(Q):
-#	return Q_img
 
 class GameAnimator:
     '''
@@ -22,8 +20,8 @@ class GameAnimator:
         self._figure = figure
         self._axes = axes
         self._result = result
-        self._interval = 200
-        self._total_frames = 1000
+        self._interval = 500
+        self._total_frames = 120
 
         self._initialized = False
         self.reset()
@@ -52,18 +50,26 @@ class GameAnimator:
     def renderFrame(self, step):
         if not self._initialized:
             self.reset()
-        self._axes.set_title('Step = '+str(step))
+        self._axes.set_title('Algorithm = ' + self._result[0]['config']['arch']\
+                                            + ' | Step = '+str(step) \
+                                            + ' | Maze = '+self._result[0]['config']['maze_type'])
         q_value = self.drawValueFunction(self._result[step])
         # game_env = self.drawGameEnv(frame, step_result)
-        img = plt.imshow(q_value, origin='upper')
-        return (img, )
-        # return (self._axes.pcolor(q_value),)
+        # img = plt.imshow(q_value, origin='upper')
+        # return(img,)
+        # return (self._axes.pcolor(img), )
+        return (self._axes.pcolor(q_value, cmap = 'RdBu_r'),)
                 # self._axes.pcolor(game_wall))
                 # self._axes.pcolor(player))
                 # self._axes.pcolor(goal))
 
     def drawValueFunction(self, step_result):
-        return step_result['value_function'].max(1).reshape(6, 9)
+    	# flip matrix in rows only: (for plotting)
+    	# value_func = step_result['value_function']
+    	value_func = step_result['value_function'].max(1).reshape(6, 9)
+    	value_func = np.flipud(value_func)
+    	# value_func = numpy.fliplr(value_func)
+        return value_func
 
     def animate(self, episode=None, start_step=None, stop_step=None):
         start_step, stop_step = self.getTimeline(self._result, episode,
@@ -77,4 +83,5 @@ class GameAnimator:
                                        self.renderFrame,
                                        frames=frame_iter,
                                        interval=self._interval,
-                                       blit=True)
+                                       blit=False,
+                                       save_count=self._total_frames)
