@@ -1,11 +1,11 @@
 import json
 import mazes
-import curses
 import sys, os
 import argparse
 import numpy as np
 from math import sqrt
 import matplotlib.pyplot as plt
+from collections import OrderedDict
 
 
 BLOCKING_MAZE_INIT =['###########',
@@ -105,8 +105,8 @@ def setup_maze(maze_type, start_row, start_col):
 def run_experiment(config):
 
 	# Initializations
-	terminal_steps = config['terminal_steps']
-	switch_steps = config['switch_maze_at_step']
+	terminal_step = config['terminal_step']
+	switch_step = config['switch_maze_at_step']
 
 	maze_type = config['maze_type']
 	arch = config['arch']
@@ -148,10 +148,6 @@ def run_experiment(config):
 
 	# Starting position of our agent
 
-	steps = 0
-	episodes = 0
-	cum_reward = 0
-	cum_reward_lst = []
 
 	S = xy2flat(start_row, start_col)
 	S_prime = S
@@ -160,22 +156,23 @@ def run_experiment(config):
 	maze_init, maze_update = setup_maze(maze_type, start_row, start_col)
 	curr_maze = maze_init
 
-	while steps <= terminal_steps:
+	step = 0
+	episode = 0
+	result = OrderedDict()
+
+	while step < terminal_step:
 
 		# Reset episode:
 		if curr_maze._game_over:
 			S = xy2flat(start_row, start_col)
 			S_prime = S
 			maze_init, maze_update = setup_maze(maze_type, start_row, start_col)
-			# print("New episode starting...")
-			# print("Current step: " + str(steps))
-			# print("Agent's position: " + str(maze_init._sprites_and_drapes['P']._virtual_row) + ", " + str(maze_init._sprites_and_drapes['P']._virtual_col))
 			curr_maze = maze_init # only doing this to reset the agent to the starting position, the next if statement will actually correct the map if need be
 
-			episodes += 1
+			episode += 1
 
-		# The maze evolves after switch_steps:
-		if steps <= switch_steps:
+		# The maze evolves after switch_step:
+		if step <= switch_step:
 			curr_maze = maze_init
 		else:
 			old_row, old_col = curr_maze._sprites_and_drapes['P']._virtual_row, \
@@ -200,8 +197,6 @@ def run_experiment(config):
 
 		# Select Action A using epsilon-greedy (given S, Q)
 		A = eps_greedy(S, Q, eps, rnd1, rnd2, rnd4)
-		# print("Action is: " + str(A))
-
 
 		# Apply action A to current maze, get reward R, and new state S'
 		obs, R, _ = curr_maze.play(A)
@@ -210,14 +205,11 @@ def run_experiment(config):
 		# Update Q function
 		Q[S,A] = Q[S,A] + alpha*( R + gamma*Q[S_prime,:].max() - Q[S,A] )
 
-		# print("Reward R is: " + str(R))
-
-
 		# Update Model with R, S_prime for a particular state action pair
 		model[(S,A)] = (R, S_prime)
 
 		if arch == 'dyna_q_plus':
-			visited_step[(S,A)] = steps
+			visited_step[(S,A)] = step
 
 		# Loop sim_epoch times (simulation):
 		for i in range(sim_epoch):
@@ -229,18 +221,36 @@ def run_experiment(config):
 			sim_R, sim_S_prime = model[(rnd_S, rnd_A)]
 
 			if arch == 'dyna_q_plus':
-				tau = steps - visited_step[(rnd_S, rnd_A)]
+				tau = step - visited_step[(rnd_S, rnd_A)]
 				sim_R += kappa*sqrt(tau)
 
 			# Update Q function
 			Q[rnd_S, rnd_A] = Q[rnd_S,rnd_A] + alpha*( sim_R + gamma*Q[sim_S_prime,:].max() - Q[rnd_S, rnd_A] )
 
-		# print("Current step: " + str(steps))
-		cum_reward += R
-		cum_reward_lst.append(cum_reward)
-		steps += 1
+		experience = {
+			'S' : S,
+			'A' : A,
+			'R' : R,
+			'S_prime' : S_prime
+		}
 
-	return cum_reward_lst, steps
+		result[step] = {
+			'config' : config,
+			'episode' : episode,
+			'experience' : experience,
+			'value_function' : Q,
+			'observation' : obs
+		}
+		step += 1
+
+	# return the following:
+	# config
+	# for every step
+		# episode Number
+		# value function
+		# experience = (s,a,s_prime,r)
+
+	return result
 
 
 def main(argv):
@@ -257,12 +267,18 @@ def main(argv):
 	with open(config_file_path, 'r') as config_fd:
 		config = json.load(config_fd)
 
-	cum_reward_lst, steps = run_experiment(config)
+	result = run_experiment(config)
+
+	cum_reward = 0
+	cum_reward_lst = []
+	for i in range(len(result)):
+		cum_reward += result[i]['experience']['R']
+		cum_reward_lst.append(cum_reward)
 
 	print("Cumulative reward: " + str(cum_reward_lst[-1]))
-	plt.plot(range(0,steps), cum_reward_lst)
+	plt.plot(cum_reward_lst)
 	plt.ylabel('Cumulative Rewards')
-	plt.xlabel('Number of steps')
+	plt.xlabel('Step number')
 	plt.show()
 
 if __name__ == '__main__':

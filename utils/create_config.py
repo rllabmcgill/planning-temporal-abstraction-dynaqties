@@ -1,7 +1,7 @@
 import json
 
 config = {'arch' : 'dyna_q_plus',
-          'terminal_steps' : 6000,
+          'terminal_step' : 6000,
           'switch_maze_at_step' : 2000,
           'maze_type' : 'blocking',
           'maze_params' : {
@@ -30,6 +30,6 @@ config = {'arch' : 'dyna_q_plus',
           }
          }
 
-filename = "blocking.config"
+filename = "../config/blocking.config"
 with open(filename, 'w') as fd:
     json.dump(config, fd)
