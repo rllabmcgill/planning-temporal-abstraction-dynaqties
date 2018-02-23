@@ -21,7 +21,7 @@ class GameAnimator:
         self._axes = axes
         self._result = result
         self._interval = 500
-        self._total_frames = 120
+        self._total_frames = 60
 
         self._initialized = False
         self.reset()
