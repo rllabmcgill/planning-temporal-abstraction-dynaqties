@@ -15,19 +15,17 @@ git clone https://github.com/rllabmcgill/planning-temporal-abstraction-dynaqties
 ```
 
 ### Files and Folders:
-- **assignment_report_track1.ipynb** : The main report containing all the results and discussion
+- **track1_part1_dynaQ.ipynb** : The main report containing all the results and discussion for Part 1 (DynaQ experiments) of the assignment
+- **track1_part2_experience_replay.ipynb** : The main report containing all the results and discussion for Part 2 (Experience replay discussion) of the assignment
 - **core/**
     - **dyna_main.py** : The base file containing all the functions necessary for the assignment.
     - **mazes.py** : An interface for the pycolab game engine.
 - **utils/**
     - **create_config.py** : An utility script for creating configuration files for the experiments.
+    - **utils.py** : A python library containing utility functions.
 - **config/**
     - **blocking.config** : An example blocking maze configuration file
     - **shortcut.config** : An example shortcut maze configuration file
 
-### Running the notebook:
-We have already run the notebook and our graphs can be viewed within it on this repository. However, the notebook needs to be run if you wish to see the animation from the last section (**Visualizing the value function**). To do so, simply clone the repository and run jupyter inside the repository:
-```
-jupyter notebook
-```
-From there, you can simply select **assignment_report_track1.ipynb** in your jupyter tab on your browser. When running the assignment report notebook, please note that the number of simulations set by default is at (n = 500). Please be patient as the algorithm takes about a minute to run in certain sections of the notebook.
+### IMPORTANT NOTE:
+Github does not render the animations we have included in the last section of *track1_part1_dynaQ.ipynb* (**Visualizing the value function**), which shows the evolution of the Q-value as number of steps increases. To see this please download the notebook.
